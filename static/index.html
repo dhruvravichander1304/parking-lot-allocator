@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parking Lot Allocator</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Parking Lot Allocator</h1>
+    <p class="sub">Memory management in an operating system, shown as cars and parking slots. Cars are processes, slots are memory blocks.</p>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab active" role="tab" aria-selected="true" data-view="lot">Parking lot</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="leave">Cars leave</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="paging">Paging</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="lane">Car lane</button>
+  </nav>
+</header>
+
+<main>
+  <!-- View 1: fixed and dynamic slots, all four fits side by side -->
+  <div id="view-lot" class="view">
+    <section class="card controls">
+      <div class="field">
+        <label for="slots">Slot sizes <span class="hint">memory blocks, comma separated</span></label>
+        <input id="slots" type="text" value="100, 500, 200, 300, 600" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="cars">Car sizes <span class="hint">processes in arrival order</span></label>
+        <input id="cars" type="text" value="212, 417, 112, 426" spellcheck="false">
+      </div>
+      <label class="check">
+        <input id="split" type="checkbox">
+        <span>Let a slot hold several cars <span class="hint">dynamic partitions, leftover space stays usable</span></span>
+      </label>
+      <div class="buttons">
+        <button id="run" class="primary">Run all four</button>
+        <button id="sample" type="button">Textbook example</button>
+        <button id="random" type="button">Random lot</button>
+      </div>
+      <p id="error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="verdict" class="verdict" hidden></section>
+
+    <section id="lots" class="lots"></section>
+    <div id="legend" class="legend" hidden></div>
+
+    <section id="summaryWrap" class="card" hidden>
+      <h2>Side by side</h2>
+      <div class="table-scroll">
+        <table id="summary"></table>
+      </div>
+      <div id="bars" class="bars"></div>
+    </section>
+
+    <section id="logWrap" class="card" hidden>
+      <h2>What happened, step by step</h2>
+      <div id="log" class="log"></div>
+    </section>
+  </div>
+
+  <!-- View 2: cars arrive and leave; holes merge; optional compaction -->
+  <div id="view-leave" class="view" hidden>
+    <section class="card controls">
+      <p class="intro">Cars arrive and leave over time. When a car leaves, its space joins any free space next to it. Every strategy plays the same script, and each memory strip shows the state after that step.</p>
+      <div class="row-fields">
+        <div class="field">
+          <label for="memory">Memory size <span class="hint">units</span></label>
+          <input id="memory" type="text" value="1000" spellcheck="false">
+        </div>
+      </div>
+      <div class="field">
+        <label for="script">Script <span class="hint">a number is a car arriving with that size; -2 means car 2 leaves</span></label>
+        <input id="script" type="text" value="300, 250, 250, -1, 100, 200, 200, -6, 200, 150" spellcheck="false">
+      </div>
+      <label class="check">
+        <input id="compact" type="checkbox">
+        <span>Compact memory when a car does not fit <span class="hint">slide the cars down so the free space joins up</span></span>
+      </label>
+      <div class="buttons">
+        <button id="leave-run" class="primary">Play the script</button>
+        <button id="leave-example" type="button">Example</button>
+      </div>
+      <p id="leave-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="leave-verdict" class="verdict" hidden></section>
+    <section id="leave-results" class="lots"></section>
+  </div>
+
+  <!-- View 3: page replacement, Belady's anomaly, working set and TLB -->
+  <div id="view-paging" class="view" hidden>
+    <section class="card controls">
+      <p class="intro">A process uses pages in the order of its reference string. If the page it needs is not in a frame, that is a page fault and a resident page must be replaced. Each frame column below shows what is in memory after every reference.</p>
+      <div class="field">
+        <label for="refs">Reference string <span class="hint">page numbers in the order they are used</span></label>
+        <input id="refs" type="text" value="7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1" spellcheck="false">
+      </div>
+      <div class="row-fields">
+        <div class="field">
+          <label for="frames">Frames <span class="hint">pages that fit in memory</span></label>
+          <input id="frames" type="text" value="3" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="window">Working-set window <span class="hint">references to look back over</span></label>
+          <input id="window" type="text" value="4" spellcheck="false">
+        </div>
+      </div>
+      <div class="row-fields">
+        <div class="field">
+          <label for="tlb_hit">TLB hit ratio <span class="hint">percent</span></label>
+          <input id="tlb_hit" type="text" value="80" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="tlb_ns">TLB lookup <span class="hint">ns</span></label>
+          <input id="tlb_ns" type="text" value="20" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="mem_ns">Memory access <span class="hint">ns</span></label>
+          <input id="mem_ns" type="text" value="100" spellcheck="false">
+        </div>
+      </div>
+      <div class="buttons">
+        <button id="pg-run" class="primary">Run all three</button>
+        <button id="pg-example" type="button">Textbook example</button>
+        <button id="pg-belady" type="button">Belady's anomaly example</button>
+      </div>
+      <p id="pg-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="pg-verdict" class="verdict" hidden></section>
+    <section id="pg-results" class="lots"></section>
+    <section id="pg-belady-card" class="card" hidden></section>
+    <section id="pg-ws-card" class="card" hidden></section>
+  </div>
+
+  <!-- View 4: cars in a lane, blocking, deadlock, animated removal -->
+  <div id="view-lane" class="view" hidden>
+    <section class="card controls">
+      <p class="intro">A one-lane strip with a gate at each end. Write each car with &lt; (leaves through the left gate) or &gt; (leaves through the right gate). A car can only leave when no car stands between it and its gate. If two cars block each other, that is a deadlock and nothing moves.</p>
+      <div class="field">
+        <label for="lane">Lane <span class="hint">left to right, for example C&lt;, A&lt;</span></label>
+        <input id="lane" type="text" value="C<, A<" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="requests">Cars that want to move out, in order <span class="hint">for example A</span></label>
+        <input id="requests" type="text" value="A" spellcheck="false">
+      </div>
+      <div class="buttons">
+        <button id="lane-run" class="primary">Move out (animate)</button>
+        <button id="lane-example" type="button">Blocked car example</button>
+        <button id="lane-deadlock" type="button">Deadlock example</button>
+      </div>
+      <p id="lane-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="lane-verdict" class="verdict" hidden></section>
+
+    <section class="card">
+      <h2>Exact layout</h2>
+      <p class="note">Positions are counted from the left gate. Each car shows its exit gate and what it waits for.</p>
+      <pre id="lane-before" class="layout"></pre>
+      <div id="lane-strip" class="strip"></div>
+      <pre id="lane-now" class="layout"></pre>
+      <div id="lane-table" class="table-scroll"></div>
+    </section>
+  </div>
+</main>
+
+<footer>Operating Systems project, Module 5: Memory Management</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
